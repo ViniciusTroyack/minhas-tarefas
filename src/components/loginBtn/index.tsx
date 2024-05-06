@@ -17,7 +17,10 @@ export function LoginBtn() {
           Acessar
         </button>
       ) : (
-        <button className={styles.loginButton} onClick={() => signOut()}>
+        <button
+          className={styles.loginButton}
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
           {data?.user?.name}
         </button>
       )}
