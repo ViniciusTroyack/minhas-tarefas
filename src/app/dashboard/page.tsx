@@ -1,13 +1,91 @@
-import { GetServerSideProps } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../lib/nextAuth";
-import styles from "./styles.module.css";
+"use client";
+
+import { ChangeEvent, FormEvent, useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Head from "next/head";
+
+import styles from "./styles.module.css";
 import { TextArea } from "@/components/textArea";
 import { FiShare2 } from "react-icons/fi";
 import { FaTrash } from "react-icons/fa";
 
+import { db } from "@/services/firebaseConnection";
+import {
+  addDoc,
+  collection,
+  query,
+  orderBy,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
+
+interface TaskProps {
+  id: string;
+  createdDate: Date;
+  public: boolean;
+  tarefa: string;
+  user: string;
+}
+
 export default function Dashboard() {
+  const { data, status } = useSession();
+  const [input, setInput] = useState("");
+  const [publicTask, setPublicTask] = useState(false);
+  const [tasks, setTasks] = useState<TaskProps[]>([]);
+
+  useEffect(() => {
+    async function loadTasks() {
+      if (!data || !data.user) {
+        return;
+      }
+      const tarefasRef = collection(db, "tarefas");
+      const qr = query(
+        tarefasRef,
+        orderBy("createdDate", "desc"),
+        where("user", "==", data.user.email)
+      );
+
+      onSnapshot(qr, (snapshot) => {
+        let lista = [] as TaskProps[];
+        snapshot.forEach((doc) => {
+          lista.push({
+            id: doc.id,
+            tarefa: doc.data().tarefa,
+            createdDate: doc.data().createdDate,
+            user: doc.data().user,
+            public: doc.data().public,
+          });
+        });
+        setTasks(lista);
+      });
+    }
+    loadTasks();
+  }, [data?.user?.email]);
+
+  function handleChangePublic(e: ChangeEvent<HTMLInputElement>) {
+    setPublicTask(e.target.checked);
+  }
+
+  async function handleRegisterTask(e: FormEvent) {
+    e.preventDefault();
+    if (!input) {
+      return alert("Insira uma tarefa");
+    }
+
+    try {
+      await addDoc(collection(db, "tarefas"), {
+        tarefa: input,
+        createdDate: new Date(),
+        user: data?.user?.email,
+        public: publicTask,
+      });
+      setInput("");
+      setPublicTask(false);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
   return (
     <div className={styles.container}>
       <Head>
@@ -17,10 +95,21 @@ export default function Dashboard() {
         <section className={styles.content}>
           <div className={styles.contentForm}>
             <h1 className={styles.title}>Qual sua tarefa?</h1>
-            <form>
-              <TextArea placeholder="Digite sua tarefa..." />
+            <form onSubmit={handleRegisterTask}>
+              <TextArea
+                placeholder="Digite sua tarefa..."
+                value={input}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                  setInput(e.target.value)
+                }
+              />
               <div className={styles.checkBoxArea}>
-                <input type="checkbox" className={styles.checkbox} />
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={publicTask}
+                  onChange={handleChangePublic}
+                />
                 <label>Deixar tarefa publica?</label>
               </div>
               <button className={styles.button} type="submit">
@@ -31,20 +120,24 @@ export default function Dashboard() {
         </section>
         <section className={styles.taskContainer}>
           <h1>Minhas tarefas</h1>
-          <article className={styles.task}>
-            <div className={styles.tagContainer}>
-              <label className={styles.tag}>PUBLICO</label>
-              <button className={styles.shareButton}>
-                <FiShare2 size={22} color="#3183ff" />
-              </button>
-            </div>
-            <div className={styles.taskContent}>
-              <p>Exemplo 1 renderizar</p>
-              <button className={styles.trashButton}>
-                <FaTrash size={24} color="#ea3140" />
-              </button>
-            </div>
-          </article>
+          {tasks.map((item) => (
+            <article key={item.id} className={styles.task}>
+              {item.public && (
+                <div className={styles.tagContainer}>
+                  <label className={styles.tag}>PUBLICO</label>
+                  <button className={styles.shareButton}>
+                    <FiShare2 size={22} color="#3183ff" />
+                  </button>
+                </div>
+              )}
+              <div className={styles.taskContent}>
+                <p>{item.tarefa}</p>
+                <button className={styles.trashButton}>
+                  <FaTrash size={24} color="#ea3140" />
+                </button>
+              </div>
+            </article>
+          ))}
         </section>
       </main>
     </div>
