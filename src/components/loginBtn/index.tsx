@@ -21,7 +21,7 @@ export function LoginBtn() {
           className={styles.loginButton}
           onClick={() => signOut({ callbackUrl: "/" })}
         >
-          {data?.user?.name}
+          {status == "loading" ? "Carregando" : data?.user?.name}
         </button>
       )}
     </>
