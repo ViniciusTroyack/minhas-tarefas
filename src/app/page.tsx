@@ -6,8 +6,6 @@ import Image from "next/image";
 import heroImg from "../../public/assets/hero.png";
 
 export default async function Home() {
-  const session = await getServerSession(authOptions);
-  console.log(session);
   return (
     <main className={styles.container}>
       <div className={styles.logoContent}>

@@ -11,7 +11,6 @@ export default withAuth(
     const isProtectedRoute = protectedRoutes.some((route) =>
       pathName.startsWith(route)
     );
-
     if (!isAuth && isProtectedRoute) {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -26,5 +25,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard", "/"],
+  matcher: ["/", "/dashboard"],
 };

@@ -39,10 +39,13 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadTasks() {
       const tarefasRef = collection(db, "tarefas");
+      if (!data?.user?.email) {
+        return;
+      }
       const qr = query(
         tarefasRef,
         orderBy("createdDate", "desc"),
-        where("user", "==", "troyackvinicius@gmail.com")
+        where("user", "==", data?.user?.email)
       );
 
       onSnapshot(qr, (snapshot) => {
