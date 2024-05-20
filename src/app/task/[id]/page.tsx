@@ -1,9 +1,9 @@
 import Head from "next/head";
 import styles from "./styles.module.css";
 import { db } from "@/services/firebase.config";
-import { collection, doc, getDoc, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { redirect } from "next/navigation";
-import { TextArea } from "@/components/textArea";
+import { FormComments } from "@/components/formComments";
 
 interface TaskPageProps {
   params: {
@@ -11,7 +11,7 @@ interface TaskPageProps {
   };
 }
 
-interface TaskProsps {
+interface TaskProps {
   tarefa: string;
   public: boolean;
   createdDate: string;
@@ -23,17 +23,16 @@ export default async function Task(props: TaskPageProps) {
   const docRef = doc(db, "tarefas", props.params.id);
   const snapshot = await getDoc(docRef);
 
-  if (snapshot.data() === undefined || !snapshot.data()?.public) {
+  if (!snapshot.exists() || !snapshot.data()?.public) {
     redirect("/");
   }
 
-  const task: TaskProsps = {
-    tarefa: snapshot.data()?.tarefa,
-    public: snapshot.data()?.public,
-    createdDate: new Date(
-      snapshot.data()?.createdDate?.seconds * 1000
-    ).toLocaleDateString(),
-    user: snapshot.data()?.user,
+  const data = snapshot.data();
+  const task = {
+    tarefa: data.tarefa,
+    public: data.public,
+    createdDate: new Date(data.createdDate.seconds * 1000).toLocaleDateString(),
+    user: data.user,
     taskId: props.params.id,
   };
 
@@ -45,15 +44,12 @@ export default async function Task(props: TaskPageProps) {
       <main className={styles.main}>
         <h1>Tarefa</h1>
         <article className={styles.task}>
-          <p>{task.tarefa}</p>
+          <p>{task?.tarefa}</p>
         </article>
       </main>
       <section className={styles.commentsContainer}>
         <h2>Deixe aqui seu comentário</h2>
-        <form>
-          <TextArea placeholder="Digite seu comentário" />
-          <button className={styles.button}>Comentar</button>
-        </form>
+        <FormComments taskId={task.taskId} />
       </section>
     </div>
   );
