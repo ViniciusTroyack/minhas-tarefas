@@ -1,10 +1,11 @@
 "use server";
 import { db } from "@/services/firebase.config";
-import { addDoc, collection, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection } from "firebase/firestore";
 import { authOptions } from "@/app/lib/nextAuth";
 import { getServerSession } from "next-auth";
 
 export async function addComment(FormData: FormData, taskId: string) {
+  if (FormData.get("comment") == "") return;
   const session = await getServerSession(authOptions);
   try {
     await addDoc(collection(db, "comments"), {

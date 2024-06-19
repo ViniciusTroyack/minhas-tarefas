@@ -1,9 +1,17 @@
 import Head from "next/head";
 import styles from "./styles.module.css";
 import { db } from "@/services/firebase.config";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { redirect } from "next/navigation";
 import { FormComments } from "@/components/formComments";
+import { CommentsSection } from "@/components/commentsSection";
 
 interface TaskPageProps {
   params: {
@@ -17,6 +25,14 @@ interface TaskProps {
   createdDate: string;
   user: string;
   taskId: string;
+}
+
+interface CommentProps {
+  id: string;
+  comment: string;
+  taskId: string;
+  user: string;
+  name: string;
 }
 
 export default async function Task(props: TaskPageProps) {
@@ -35,6 +51,22 @@ export default async function Task(props: TaskPageProps) {
     user: data.user,
     taskId: props.params.id,
   };
+  const firebaseQuery = query(
+    collection(db, "comments"),
+    where("taskId", "==", props.params.id)
+  );
+
+  const snapshotComments = await getDocs(firebaseQuery);
+  let allComments: CommentProps[] = [];
+  snapshotComments.forEach((doc) => {
+    allComments.push({
+      id: doc.id,
+      comment: doc.data().comment,
+      user: doc.data().user,
+      name: doc.data().name,
+      taskId: doc.data().taskId,
+    });
+  });
 
   return (
     <div className={styles.container}>
@@ -50,6 +82,13 @@ export default async function Task(props: TaskPageProps) {
       <section className={styles.commentsContainer}>
         <h2>Deixe aqui seu comentário</h2>
         <FormComments taskId={task.taskId} />
+      </section>
+      <section className={styles.commentsContainer}>
+        <h2>Comentário</h2>
+        {allComments.length === 0 && (
+          <span>Nenhum comentário foi encontrado...</span>
+        )}
+        <CommentsSection taskId={props.params.id} />
       </section>
     </div>
   );
